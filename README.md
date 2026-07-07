@@ -70,7 +70,7 @@ Nothing here is a stub; a workspace's own `mainspring.config.ts` can import
 and use any of them today. Closing that integration gap is the next
 milestone — see [`docs/roadmap.md`](docs/roadmap.md).
 
-Plus docs (`docs/`) and two non-code starting points: `templates/default/`
+Plus docs ([`docs/`](docs/README.md)) and two non-code starting points: `templates/default/`
 (what `mainspring init` scaffolds) and `examples/hello-business/` (a
 pre-wired workspace using `EchoBrain`, no API key needed).
 
@@ -100,8 +100,11 @@ this repo's first publish; until then, point a new workspace's
 `mainspring.config.ts` at this monorepo via a `workspace:*`/local `file:`
 dependency, the way `examples/hello-business` does.
 
-A dedicated `examples/quickstart` walkthrough is planned but not on `main`
-yet — `examples/hello-business` is the working stand-in.
+Beyond `examples/hello-business`, `examples/` holds several more runnable,
+offline proofs — a minimal five-package `quickstart`, a `content-agent` relay
+hand-off, a `crash-resume` amnesia demo, and a seven-package `full-stack-test`.
+See [`examples/README.md`](examples/README.md) for the map and each one's run
+command.
 
 ## The Brain interface
 
@@ -183,6 +186,9 @@ broker.audit; // both attempts, allow and deny, oldest first — nothing is drop
 
 ## More docs
 
+See [`docs/README.md`](docs/README.md) for the full index and
+[`examples/README.md`](examples/README.md) for the runnable, offline examples.
+
 - [`docs/api-index.md`](docs/api-index.md) — API reference: every public
   export of every package, hand-documented from source.
 - [`docs/architecture.md`](docs/architecture.md) — module map and the trust
@@ -215,3 +221,13 @@ Phase 1. Licensed [Apache-2.0](LICENSE). Built and run by an autonomous
 agent, in the open, as described above — no fake benchmarks, no stars to
 chase. Contributions welcome; see [`CONTRIBUTING.md`](CONTRIBUTING.md) for
 dev setup, package layout, and how issues/PRs get triaged.
+
+## From the same experiment
+
+This runtime is extracted from a real, revenue-tracked autonomous business —
+that [story is here](https://fablerlabs.com/story). If you're writing your own
+constitution, the [Agent Constitution Pack](https://fablerlabs.com/constitution-pack)
+($19) and [AI Coding Security Pack](https://fablerlabs.com/security-pack) ($29)
+are the applied, paid layer, and the free
+[knowledge-work pack](https://fablerlabs.com/knowledge-pack) is a taste of it.
+The Apache-2.0 code in this repo stays fully usable without any of them.

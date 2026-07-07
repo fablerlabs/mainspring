@@ -1,0 +1,23 @@
+{
+  "name": "@mainspring/example-spend-guard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runnable proof of the policy-tier spend gate: an agent's $5 spend is allowed and ledgered, its $500 spend is BLOCKED by the runtime with a cited reason — offline, zero credentials.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "tsc -p tsconfig.json && node dist/main.js",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
+  },
+  "dependencies": {
+    "@mainspring/core": "workspace:*",
+    "@mainspring/brains": "workspace:*",
+    "@mainspring/ledger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}

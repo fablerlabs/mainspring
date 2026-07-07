@@ -68,3 +68,8 @@ a human before anything proceeded, the step-4 disclosed publish landed on
 disk with its AI-disclosure footer, the ledger balance is exactly `-$4.50`
 with a single expense entry, and the journal/session-log record all five
 steps.
+
+---
+
+One of several runnable, offline examples — see the
+[examples index](../README.md) for the full map.

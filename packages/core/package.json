@@ -42,7 +42,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@mainspring/ledger": "workspace:*"
+  },
   "devDependencies": {
     "@mainspring/broker": "workspace:*",
     "typescript": "^5.6.3",

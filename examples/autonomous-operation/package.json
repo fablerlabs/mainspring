@@ -1,0 +1,23 @@
+{
+  "name": "@mainspring/example-autonomous-operation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The runnable companion to docs/tutorial-autonomous-operation.md: five standalone scripts that add a constitution, durable memory, a spend-capped ledger, a human-approval relay, and a cron/backoff wake loop on top of the quickstart.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "step:a": "node step-a-constitution.mjs",
+    "step:b": "node step-b-memory.mjs",
+    "step:c": "node step-c-ledger.mjs",
+    "step:d": "node step-d-relay.mjs",
+    "step:e": "node step-e-wake.mjs"
+  },
+  "dependencies": {
+    "@mainspring/core": "workspace:*",
+    "@mainspring/memory": "workspace:*",
+    "@mainspring/ledger": "workspace:*",
+    "@mainspring/governance": "workspace:*",
+    "@mainspring/relay": "workspace:*",
+    "@mainspring/schedule": "workspace:*"
+  }
+}

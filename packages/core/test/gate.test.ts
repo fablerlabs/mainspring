@@ -51,6 +51,30 @@ test("a sequence of expenses is blocked once their running total crosses the cap
   assert.match(decisions[1].reason ?? "", /exceeding the per-session cap/);
 });
 
+test("a NaN ledger amount is blocked rather than silently allowed", () => {
+  const decision = gateAction(
+    {
+      kind: "ledger",
+      entry: { date: "2026-01-01T00:00:00.000Z", type: "expense", description: "corrupted", amountUsd: Number.NaN },
+    },
+    { constitution, workspaceDir: "/tmp/workspace", spentSoFarUsd: 0, tools: [] },
+  );
+  assert.equal(decision.allowed, false);
+  assert.match(decision.reason ?? "", /finite number/);
+});
+
+test("an Infinity ledger amount is blocked rather than bypassing the per-session cap", () => {
+  const decision = gateAction(
+    {
+      kind: "ledger",
+      entry: { date: "2026-01-01T00:00:00.000Z", type: "expense", description: "corrupted", amountUsd: Number.POSITIVE_INFINITY },
+    },
+    { constitution, workspaceDir: "/tmp/workspace", spentSoFarUsd: 0, tools: [] },
+  );
+  assert.equal(decision.allowed, false);
+  assert.match(decision.reason ?? "", /finite number/);
+});
+
 test("revenue is never capped, only expense", () => {
   const decision = gateAction(
     {

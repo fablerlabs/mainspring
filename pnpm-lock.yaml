@@ -8,6 +8,27 @@ importers:
 
   .: {}
 
+  examples/autonomous-operation:
+    dependencies:
+      '@mainspring/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@mainspring/governance':
+        specifier: workspace:*
+        version: link:../../packages/governance
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@mainspring/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
+      '@mainspring/relay':
+        specifier: workspace:*
+        version: link:../../packages/relay
+      '@mainspring/schedule':
+        specifier: workspace:*
+        version: link:../../packages/schedule
+
   examples/content-agent:
     dependencies:
       '@mainspring/brains':
@@ -118,6 +139,25 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  examples/spend-guard:
+    dependencies:
+      '@mainspring/brains':
+        specifier: workspace:*
+        version: link:../../packages/brains
+      '@mainspring/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/brains:
     devDependencies:
       '@types/node':
@@ -154,6 +194,10 @@ importers:
         version: 22.20.0
 
   packages/core:
+    dependencies:
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../ledger
     devDependencies:
       '@mainspring/broker':
         specifier: workspace:*

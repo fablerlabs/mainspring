@@ -7,7 +7,9 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "soak": "node tools/soak.mjs",
+    "soak:smoke": "node tools/soak.mjs --sessions 50 --seed 1"
   },
   "engines": {
     "node": ">=18"

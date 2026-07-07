@@ -91,3 +91,8 @@ pnpm --filter @mainspring/example-full-stack-test test
 ```
 
 12 assertions covering all seven packages — see `test/full-stack.test.ts`.
+
+---
+
+One of several runnable, offline examples — see the
+[examples index](../README.md) for the full map.

@@ -5,3 +5,4 @@ dist-test/
 .npmrc
 *.log
 .DS_Store
+tools/.soak-reports/

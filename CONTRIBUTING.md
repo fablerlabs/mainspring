@@ -44,13 +44,18 @@ Run a single package's scripts from its directory (e.g. `cd packages/core
 ## How the packages are laid out
 
 ```
-packages/core/     the Brain contract + the constitution-enforcing session loop
-packages/memory/   STATE.md / journal / session-log compaction utilities
-packages/scrub/    the secret-shaped-string gate used before any publish/notify
-packages/relay/    zero-dependency client for the Fabler Relay human-in-the-loop protocol
-packages/cli/      the `mainspring` bin: init / run / status / doctor
-examples/hello-business/  a runnable workspace using the zero-API-key EchoBrain
-templates/default/        what `mainspring init` scaffolds into a new workspace
+packages/core/        the Brain contract + the constitution-enforcing session loop
+packages/memory/      STATE.md / journal / session-log compaction utilities
+packages/scrub/       the secret-shaped-string gate used before any publish/notify
+packages/relay/       zero-dependency client for the Fabler Relay human-in-the-loop protocol
+packages/ledger/      append-only LEDGER.csv + the Constitution's money-approval thresholds
+packages/governance/  Constitution-as-code: hard rules loaded from CONSTITUTION.md
+packages/brains/      reference Brain implementations (MockBrain, ClaudeBrain)
+packages/broker/      capability-scoped tool dispatch with allowlists and spend/call caps
+packages/schedule/    cadence/backoff/STOP-file checks for when a session should run at all
+packages/cli/         the `mainspring` bin: init / run / status / doctor
+examples/              runnable workspaces (hello-business, quickstart, content-agent, full-stack-test)
+templates/default/     what `mainspring init` scaffolds into a new workspace
 ```
 
 Each package under `packages/*` builds independently with its own
@@ -59,7 +64,41 @@ has tests, compiles them separately via `tsconfig.test.json` into
 `dist-test/` before running them with the built-in Node test runner
 (`node --test`) — no external test framework dependency. See
 `docs/architecture.md` for the module map and trust-boundary rationale
-behind the package split.
+behind the package split, and `README.md`'s package table for what's
+shipped vs. still wired in only per-workspace.
+
+## Code style
+
+There's no linter or formatter configured (no ESLint/Prettier config in
+the repo) — match the conventions already in the file you're editing.
+The patterns below are what's actually consistent across `packages/*/src`
+today:
+
+- **Strict TypeScript, zero runtime dependencies.** Every `tsconfig.json`
+  extends `tsconfig.base.json` (`strict: true`, ES2022, NodeNext modules).
+  Every package's `dependencies` is `{}` except `@mainspring/broker` and
+  `@mainspring/cli`, which depend only on other `@mainspring/*` workspace
+  packages — never a third-party npm package. If your change needs one,
+  say why in the PR description; it's a high bar here by design.
+- **NodeNext ESM means explicit `.js` extensions.** Relative imports in
+  `.ts` source and tests use a `.js` suffix (e.g. `from "../src/index.js"`)
+  even though the file on disk is `.ts` — this is required by
+  `moduleResolution: "NodeNext"`, not a typo.
+- **Named exports only.** No `export default` appears anywhere in
+  `packages/*/src` (the one exception, in `packages/cli`, is generated
+  code expecting a *user's* `mainspring.config.ts` to have a default
+  export — that's a workspace convention, not this repo's).
+- **Error messages are prefixed with the throwing class/function** (e.g.
+  `"ClaudeBrain: Anthropic API returned ..."`, `"capability already
+  registered: ..."`) and never interpolate secrets — see `packages/scrub`
+  if you're ever tempted to log a raw value that might be one.
+- **JSDoc on every exported function/type**, focused on invariants and
+  *why*, not restating the signature — e.g. `packages/ledger/src/caps.ts`'s
+  boundary-inclusivity comment. Match that density on new public APIs.
+- **Tests use only `node:test` + `node:assert/strict`**, colocated in each
+  package's `test/` directory, compiled via that package's
+  `tsconfig.test.json` into `dist-test/` before running (see `pnpm test`
+  in any `packages/*/package.json`).
 
 ## Before you open a PR
 

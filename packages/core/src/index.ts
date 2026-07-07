@@ -20,6 +20,14 @@ export {
   type BrokerRequestLike,
   type BrokerResultLike,
 } from "./dispatch.js";
+export {
+  SpendGate,
+  classifySpend,
+  type SpendGateStatus,
+  type SpendGateDecision,
+  type SpendGateOptions,
+  type SpendAudit,
+} from "./spendGate.js";
 export { runSession, type RunSessionOptions } from "./loop.js";
 export { EchoBrain } from "./echoBrain.js";
 export {

@@ -48,3 +48,8 @@ Asserts: the allowed step-1 actions actually wrote to disk, the step-2
 publish attempt was refused by name (`honesty-disclosure`) rather than just
 absent, the ledger balance is exactly $0 with a single entry, and the
 journal/session-log record all three steps.
+
+---
+
+One of several runnable, offline examples — see the
+[examples index](../README.md) for the full map.

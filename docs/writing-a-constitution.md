@@ -355,3 +355,9 @@ itself: some domains aren't a policy tuning problem.
 - Either way, keep `CONSTITUTION.md` and `mainspring.config.ts`'s
   `constitution` object in sync by hand until a future version parses one
   from the other (see `docs/architecture.md`'s known gaps).
+- Don't want to write one from scratch: ready-made archetype constitutions
+  (SaaS support, content/SEO, ecommerce, research monitoring, and a
+  refusal worked example) are available at
+  [fablerlabs.com/constitution-pack](https://fablerlabs.com/constitution-pack)
+  ($19, MIT) — they follow this same three-tier shape and load directly via
+  `loadConstitutionFile()`.
