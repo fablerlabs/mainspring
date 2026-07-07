@@ -38,11 +38,93 @@ function looksLikeSecret(content: string): boolean {
 }
 
 /**
+ * An id (WorkOrder.id / RelayRequest.id) is turned into a filename by
+ * dispatch.ts (`join(workspaceDir, "queue", `${id}.json`)`). Because that path
+ * is built from the id verbatim, an id containing path separators or `..`
+ * would let an enqueue/relay Action escape the workspace — so the gate
+ * constrains ids to a safe, filename-only charset. Fail-CLOSED: anything that
+ * isn't an obviously safe id is blocked.
+ */
+function isSafeId(id: unknown): id is string {
+  return typeof id === "string" && id.length > 0 && /^[A-Za-z0-9._-]+$/.test(id) && !id.includes("..");
+}
+
+/**
+ * The brain is untrusted by contract, so before the gate reasons about an
+ * Action's *content* it confirms the Action is even structurally well-formed.
+ * A malformed Action (missing or mistyped required field) is blocked here —
+ * fail-CLOSED — rather than thrown through gateAction (which would crash the
+ * whole session and skip every other queued Action) or silently passed (which
+ * would, e.g., sneak a `write` with a non-string `content` past the secret
+ * scan and on into dispatch). Returns a reason when malformed, else null.
+ */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function structuralReason(action: Action): string | null {
+  // The declared Action type promises these fields exist, but the brain is
+  // untrusted, so inspect through an untyped view rather than trusting the union.
+  const a = action as unknown as Record<string, unknown>;
+  switch (action.kind) {
+    case "write":
+      if (typeof a.path !== "string" || a.path.length === 0) {
+        return "write action is missing a valid string `path`";
+      }
+      if (typeof a.content !== "string") {
+        return "write action is missing a valid string `content`";
+      }
+      return null;
+    case "ledger": {
+      if (!isObject(a.entry)) {
+        return "ledger action is missing a valid `entry`";
+      }
+      if (typeof a.entry.amountUsd !== "number" || !Number.isFinite(a.entry.amountUsd)) {
+        return "ledger entry `amountUsd` must be a finite number";
+      }
+      if (typeof a.entry.type !== "string") {
+        return "ledger entry `type` must be a string";
+      }
+      return null;
+    }
+    case "notify":
+      if (typeof a.text !== "string") {
+        return "notify action is missing a valid string `text`";
+      }
+      return null;
+    case "run":
+      if (typeof a.tool !== "string" || a.tool.length === 0) {
+        return "run action is missing a valid string `tool`";
+      }
+      return null;
+    case "enqueue":
+      if (!isObject(a.order) || !isSafeId(a.order.id)) {
+        return "enqueue action is missing a valid `order` with a filename-safe string `id`";
+      }
+      return null;
+    case "relay":
+      if (!isObject(a.request) || !isSafeId(a.request.id)) {
+        return "relay action is missing a valid `request` with a filename-safe string `id`";
+      }
+      return null;
+    case "done":
+      return null;
+    default:
+      return null; // an unknown kind is caught by gateAction's exhaustive default
+  }
+}
+
+/**
  * Validates a single proposed Action against the Constitution. Nothing is
  * ever executed here — this only decides allow/block and why. dispatch.ts
  * is the only module allowed to act on an `allowed: true` decision.
  */
 export function gateAction(action: Action, ctx: GateContext): GateDecision {
+  const malformed = structuralReason(action);
+  if (malformed) {
+    return { action, allowed: false, reason: malformed };
+  }
+
   switch (action.kind) {
     case "write": {
       if (!isWithinWorkspace(ctx.workspaceDir, action.path)) {

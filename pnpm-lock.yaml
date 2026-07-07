@@ -8,6 +8,65 @@ importers:
 
   .: {}
 
+  examples/content-agent:
+    dependencies:
+      '@mainspring/brains':
+        specifier: workspace:*
+        version: link:../../packages/brains
+      '@mainspring/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@mainspring/governance':
+        specifier: workspace:*
+        version: link:../../packages/governance
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@mainspring/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
+      '@mainspring/relay':
+        specifier: workspace:*
+        version: link:../../packages/relay
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  examples/full-stack-test:
+    dependencies:
+      '@mainspring/brains':
+        specifier: workspace:*
+        version: link:../../packages/brains
+      '@mainspring/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@mainspring/governance':
+        specifier: workspace:*
+        version: link:../../packages/governance
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@mainspring/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
+      '@mainspring/relay':
+        specifier: workspace:*
+        version: link:../../packages/relay
+      '@mainspring/scrub':
+        specifier: workspace:*
+        version: link:../../packages/scrub
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   examples/hello-business:
     dependencies:
       '@mainspring/core':
@@ -115,6 +174,15 @@ importers:
         version: 5.9.3
 
   packages/relay:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/schedule:
     devDependencies:
       '@types/node':
         specifier: ^22.10.2

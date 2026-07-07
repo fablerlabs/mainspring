@@ -115,8 +115,15 @@ export async function applyAction(action: Action, ctx: DispatchContext): Promise
       if (!handler) {
         return { action, applied: false, detail: `no handler registered for tool "${action.tool}"` };
       }
-      const result = await handler(action.args);
-      return { action, applied: true, detail: `ran ${action.tool}: ${JSON.stringify(result)}` };
+      // Contain a throwing handler: one failing tool must not reject the whole
+      // batch and crash the session (which would skip later actions and the
+      // end-of-session summary/commit). Record it as not-applied instead.
+      try {
+        const result = await handler(action.args);
+        return { action, applied: true, detail: `ran ${action.tool}: ${JSON.stringify(result)}` };
+      } catch (err) {
+        return { action, applied: false, detail: `tool "${action.tool}" threw: ${(err as Error).message}` };
+      }
     }
 
     case "done":
