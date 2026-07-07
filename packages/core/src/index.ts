@@ -14,3 +14,10 @@ export {
 } from "./dispatch.js";
 export { runSession, type RunSessionOptions } from "./loop.js";
 export { EchoBrain } from "./echoBrain.js";
+export {
+  classifyFailure,
+  parseResetTime,
+  nextWake,
+  type FailureKind,
+  type NextWakeInput,
+} from "./backoff.js";

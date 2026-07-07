@@ -3,6 +3,23 @@
   "version": "0.1.0",
   "description": "Mainspring broker: a capability-gated side-effect boundary — spend/message/publish requests are checked against per-capability caps and audited, allow or deny, before anything happens. The brain never holds a raw secret.",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/fablerlabs/mainspring/tree/main/packages/broker#readme",
+  "bugs": {
+    "url": "https://github.com/fablerlabs/mainspring/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fablerlabs/mainspring.git",
+    "directory": "packages/broker"
+  },
+  "keywords": [
+    "autonomous-agent",
+    "capability-gating",
+    "side-effects",
+    "audit-log",
+    "mainspring"
+  ],
+  "author": "Fabler Labs",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +28,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

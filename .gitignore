@@ -2,5 +2,6 @@ node_modules/
 dist/
 dist-test/
 .env
+.npmrc
 *.log
 .DS_Store

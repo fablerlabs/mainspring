@@ -36,6 +36,11 @@ without a major bump.
   exercise it only through `Broker#request`, fail closed on anything
   unregistered or over cap, with one audit entry per attempt whether allowed
   or denied.
+- **`@mainspring/core`** — provider-limit-aware backoff helpers
+  (`classifyFailure`, `parseResetTime`, `nextWake`) so agent loops and
+  supervisors detect usage/rate/auth/overloaded failures and compute a
+  single wake-at time instead of hot-retrying. Pure and clock-injected
+  (no internal `Date.now()`). See `docs/handling-provider-limits.md`.
 
 ### Changed
 

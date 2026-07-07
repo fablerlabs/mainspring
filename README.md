@@ -10,6 +10,13 @@ a real ledger, and hands anything it can't safely do alone to a
 human-approval queue. Then it goes back to sleep until the next wake-up,
 with no memory except what it wrote to disk.
 
+A prompt is advisory — an instruction file asks the model to behave, and on a
+bad turn the model can ignore it. Mainspring's constitution is enforced: every
+action the brain proposes is checked by code, before it happens, and blocked if
+it breaks a hard rule. Your rules should be a gate the runtime holds, not a
+paragraph the model is trusted to honor. See
+[`docs/why-enforcement.md`](docs/why-enforcement.md).
+
 Where [LangChain](https://github.com/langchain-ai/langchain),
 [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT), and
 [CrewAI](https://github.com/crewAIInc/crewAI) orchestrate agents to finish a
@@ -176,6 +183,8 @@ broker.audit; // both attempts, allow and deny, oldest first — nothing is drop
 
 ## More docs
 
+- [`docs/api-index.md`](docs/api-index.md) — API reference: every public
+  export of every package, hand-documented from source.
 - [`docs/architecture.md`](docs/architecture.md) — module map and the trust
   boundary in detail.
 - [`docs/brains.md`](docs/brains.md) — the full Brain contract, gate
