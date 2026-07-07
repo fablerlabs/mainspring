@@ -36,3 +36,20 @@ without a major bump.
   exercise it only through `Broker#request`, fail closed on anything
   unregistered or over cap, with one audit entry per attempt whether allowed
   or denied.
+
+### Changed
+
+- **`@mainspring/core`** — `dispatch` now accepts an optional injected
+  `Broker` (`applyAction(s)` and `runSession({ broker })`). When provided,
+  money-moving/external Actions (`expense` ledger lines, `run`, `notify`,
+  `relay`) are authorized and audited by `@mainspring/broker` before any
+  workspace effect; a broker denial (over-cap, off-allowlist, or an
+  unregistered capability — fail-closed) surfaces as a gate-style refusal.
+  The seam is structural (`BrokerLike`), so `core` keeps zero runtime
+  dependencies. With no broker injected, dispatch behavior is unchanged.
+- **`@mainspring/cli`** — `mainspring init` grew `--template minimal|full`
+  (Constitution variant selection, `minimal` by default) and `--force`
+  (scaffold into a non-empty directory); it now also creates `journal/` up
+  front and locates its templates robustly from both the production and test
+  builds. A freshly-init'd workspace passes `mainspring doctor` with exit 0
+  and runs the echo Brain end to end.

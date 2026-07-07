@@ -3,6 +3,34 @@ import { dirname, join, resolve, sep } from "node:path";
 import type { Action, DispatchResult, LedgerEntry } from "./types.js";
 
 /**
+ * The subset of `@mainspring/broker`'s `Broker` that dispatch depends on:
+ * a single `request()` that checks a side effect against per-capability
+ * caps/allowlists, audits the attempt (allow or deny), and returns a
+ * decision. Typed structurally so `@mainspring/broker` stays a *type-only*
+ * dependency of core — core carries no broker code at runtime; a real
+ * `Broker` instance is injected by whoever wires the workspace.
+ */
+export interface BrokerLike {
+  request(req: BrokerRequestLike): Promise<BrokerResultLike>;
+}
+
+/** The request shape dispatch builds from a money-moving/external Action. Mirrors `@mainspring/broker`'s `BrokerRequest`. */
+export interface BrokerRequestLike {
+  capability: string;
+  op: string;
+  target?: string;
+  amountUsd?: number;
+  args?: Record<string, unknown>;
+}
+
+/** The decision dispatch reads back. Mirrors `@mainspring/broker`'s `BrokerResult`. */
+export interface BrokerResultLike {
+  allowed: boolean;
+  reason: string;
+  output?: unknown;
+}
+
+/**
  * Optional handlers for `run` Actions, keyed by ToolSpec name. A brain only
  * ever sees the declarative ToolSpec (name/description/argsSchema); the
  * handler that actually performs the call lives here, on the trusted side
@@ -13,6 +41,46 @@ export type ToolRegistry = Record<string, (args: unknown) => Promise<unknown>>;
 export interface DispatchContext {
   workspaceDir: string;
   toolRegistry?: ToolRegistry;
+  /**
+   * Optional capability broker. When present, every money-moving/external
+   * Action (expense ledger line, run, notify, relay) is first put through
+   * `broker.request()`: a deny (over-cap, off-allowlist, or an unregistered
+   * capability — fail-CLOSED) blocks the Action and surfaces the broker's
+   * reason as a gate-style refusal; only on allow does dispatch perform the
+   * workspace effect. Workspace-local Actions (write, enqueue, done) are not
+   * brokered. Omit it and behavior is exactly as before.
+   */
+  broker?: BrokerLike;
+}
+
+/**
+ * Maps a money-moving/external Action onto the broker capability that governs
+ * it, or returns `null` for a workspace-local Action the broker does not
+ * mediate (write, enqueue, done). This is the whole policy of *what* the
+ * broker sees; the caller decides the caps by registering these capability
+ * ids on the Broker it injects.
+ */
+function brokerRequestFor(action: Action): BrokerRequestLike | null {
+  switch (action.kind) {
+    case "run":
+      return {
+        capability: action.tool,
+        op: "run",
+        args: typeof action.args === "object" && action.args !== null ? (action.args as Record<string, unknown>) : undefined,
+      };
+    case "ledger":
+      // Only expenses move money outward; revenue/refund/adjustment are pure
+      // bookkeeping and are recorded without a broker spend check (mirroring
+      // gate.ts, which caps only expenses).
+      if (action.entry.type !== "expense") return null;
+      return { capability: "spend", op: action.entry.description, amountUsd: action.entry.amountUsd };
+    case "notify":
+      return { capability: "notify-owner", op: "notify", target: action.to };
+    case "relay":
+      return { capability: "relay", op: action.request.summary, target: action.request.id };
+    default:
+      return null; // write, enqueue, done: nothing leaves the workspace.
+  }
 }
 
 function ledgerDelta(entry: LedgerEntry): number {
@@ -64,6 +132,21 @@ async function ensureLedgerHeader(ledgerPath: string): Promise<void> {
  * caller (loop.ts) already ran the Action through gate.ts.
  */
 export async function applyAction(action: Action, ctx: DispatchContext): Promise<DispatchResult> {
+  // Broker seam: when a Broker is injected, every money-moving/external Action
+  // is authorized (and audited) by the real @mainspring/broker before any
+  // workspace effect happens. A deny — over-cap, off-allowlist, or an
+  // unregistered capability (fail-CLOSED) — blocks the Action here, surfacing
+  // the broker's own reason string, and the effect below never runs.
+  if (ctx.broker) {
+    const req = brokerRequestFor(action);
+    if (req) {
+      const decision = await ctx.broker.request(req);
+      if (!decision.allowed) {
+        return { action, applied: false, detail: `broker denied: ${decision.reason}` };
+      }
+    }
+  }
+
   switch (action.kind) {
     case "write": {
       const target = resolve(ctx.workspaceDir, action.path);

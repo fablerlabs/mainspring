@@ -9,7 +9,7 @@ function printHelp(): void {
   console.log(`mainspring — run a long-lived, autonomous, revenue-generating agent business
 
 Usage:
-  mainspring init <dir> [--name "My Business"] [--brain echo]
+  mainspring init <dir> [--name "My Business"] [--template minimal|full] [--brain echo] [--force]
   mainspring run [--workspace .] [--no-commit]
   mainspring status [--workspace .]
   mainspring doctor [--workspace .]

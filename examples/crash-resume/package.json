@@ -1,0 +1,22 @@
+{
+  "name": "@mainspring/example-crash-resume",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The amnesia demo: session 1 does real work then crashes mid-task; session 2 boots cold from disk and proves — by assertion, not narration — that it resumes from exactly where session 1 left off.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "tsc -p tsconfig.json && node dist/main.js",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
+  },
+  "dependencies": {
+    "@mainspring/ledger": "workspace:*",
+    "@mainspring/memory": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}

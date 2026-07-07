@@ -63,6 +63,46 @@ it's a hard rule. If violating it should make the gate escalate to a human,
 it's policy. If violating it just means the business made a worse call,
 it's doctrine — write it down, but don't wire it to `gate.ts`.
 
+## Rule → enforcing code
+
+The tiers above are a design discipline; this section is the receipt. Every
+hard-rule *pattern* a constitution can state maps to a specific, testable
+export — so "enforced structurally, not just stated in prose" is a claim you
+can `grep`, not a hope. Two packages do the enforcing, and they overlap on
+purpose:
+
+- `@mainspring/governance` — pure Action guards, zero runtime dependencies,
+  never throws. `createBuiltInRules(config)` returns the four built-in
+  `Rule`s; `evaluate(action, rules)` folds them into one verdict (`block`
+  beats `escalate` beats `allow`).
+- `@mainspring/core`'s `gate.ts` — the loop's chokepoint. `gateAction()` is
+  the only function that returns `allowed: true`, and `dispatch.ts` is the
+  only module allowed to act on that.
+
+Where a check lives in both layers (secret-shape and spend caps do), that's
+defense in depth: a workspace that swaps or disables one still keeps the
+other.
+
+| Hard-rule pattern | Enforcing code | Verdict on violation |
+|---|---|---|
+| AI disclosure on public posts | `honestyDisclosureRule` → id `honesty-disclosure` (`governance/src/rules.ts`) | block |
+| Secrets never leave via write/notify/run | `noSecretsRule` → id `no-secrets` (`governance`), plus `looksLikeSecret` in `gate.ts` | block |
+| Spend caps + notify/approval bands | `spendCapsRule` → `checkSpendPolicy` (`governance`), plus the `ledger` branch of `gateAction` | block or escalate |
+| External actions limited to an allowlist | `externalAllowlistRule` → id `external-allowlist` (`governance`), plus the `run` branch of `gateAction` (tool must be a declared `ToolSpec`) | block |
+| Writes stay in the workspace, never `.env`/`.git` | `isWithinWorkspace` / `touchesForbiddenTarget` in `gate.ts` | block |
+| Queue ids can't traverse the filesystem | `isSafeId` in `gate.ts` (guards `enqueue`/`relay`) | block |
+| A malformed Action never slips through | `structuralReason` in `gate.ts` | block |
+| `STOP` kill switch halts the loop | `decide()` in `@mainspring/schedule` (`stopFilePresent` ⇒ `run: false`) | no run |
+
+Note what is deliberately *not* in the table: "legal and honest only,"
+"respect platform ToS." Those are genuine hard rules, but they resist a single
+structural check — no function returns `block` for "this is dishonest." They
+do their work *through* the checks that can be structural (a deceptive post
+still has to clear `honesty-disclosure`; a ToS-violating purchase still has to
+clear `spend-caps`) and through the DATA-vs-instructions boundary below. When a
+rule has no honest structural encoding, write it as prose and say so — don't
+imply a gate enforces what no gate can see.
+
 ## Why hard rules must be owner-proof AND content-proof
 
 A constitution has two adversaries, and most drafts only defend against one
@@ -125,7 +165,66 @@ Set a hard per-session (or per-day) cap on top of the bands, independent of
 whether any single action was approved — this is what stops a string of
 individually-fine small approvals from adding up to an unbounded spend.
 `@mainspring/governance`'s `spend-caps` rule enforces exactly this shape:
-see `checkSpendPolicy` in `packages/governance/src/rules.ts`.
+see `checkSpendPolicy` in `packages/governance/src/rules.ts`. That rule gates
+the *decision* to spend; the section below covers the second, tighter fence
+around the *act* of spending.
+
+## From spend thresholds to broker Caps
+
+The bands above govern one thing: the `ledger` *Action* — the brain's recorded
+decision to spend, checked by `spend-caps`. But recording a ledger entry and
+actually moving money are two different events, and the second wants its own,
+tighter fence. That fence is `@mainspring/broker`.
+
+A `Cap` (`packages/broker/src/types.ts`) is the machine form of a spend rule
+applied to a *capability* — the thing that performs a side effect (a Stripe
+charge, a Telegram send), not the thing that logs it:
+
+```ts
+export interface Cap {
+  maxAmountUsd?: number;   // a single request may not exceed this
+  maxCallsPerDay: number;  // serviced requests per UTC calendar day
+  allowlist?: string[];    // if set, request.target must be one of these
+}
+```
+
+A constitution's money section translates into a `Cap` directly. The reference
+`createMemoryBroker` ships the mapping the runtime constitution uses:
+
+```ts
+export const DEFAULT_SPEND_CAP: Cap = { maxAmountUsd: 75, maxCallsPerDay: 10 };
+```
+
+`maxAmountUsd: 75` is the constitution's $75 approval high-water mark expressed
+as a hard ceiling on any single brokered request. `maxCallsPerDay: 10` adds a
+*frequency* bound the governance `spend-caps` rule has no equivalent for — a
+belt the per-session dollar cap doesn't provide, so a run of individually
+in-band charges can't add up unbounded within a day. `allowlist` narrows a
+capability to a fixed set of recipients (the one owner chat id, a fixed set of
+product names); omitting `target` against an allowlisted capability is a deny,
+never a wildcard.
+
+`Broker#request` checks all three — allowlist, then amount, then the day's call
+count — and writes exactly one audit line per attempt, allow or deny, *before*
+the handler ever runs. The handler is the only code that touches the real
+credential; everything above it sees only amounts, targets, and op labels.
+
+Two things to state plainly, so no one reads more into this than is there.
+First, the broker is a *distinct* layer from the `gate.ts`/`governance`
+enforcement above — as of this writing it is not yet wired into the core loop;
+it's the shipped pattern a workspace registers its real capabilities behind.
+Second, its per-day counts live in memory for a single process, so a host that
+restarts every session must persist and reload them.
+
+So "how a spend cap in the constitution becomes code" is two mappings, not one:
+
+- `moneyCaps` (`perSessionUsd` / `notifyAboveUsd` / `approvalAboveUsd`) →
+  `spend-caps` via `checkSpendPolicy`, gating the `ledger` Action.
+- The same intent → a broker `Cap` (`maxAmountUsd` / `maxCallsPerDay` /
+  `allowlist`), gating the capability request that actually spends.
+
+Keep the two consistent by hand, the same discipline as keeping
+`CONSTITUTION.md` and `mainspring.config.ts` in sync.
 
 ## Escalation design
 
@@ -145,6 +244,57 @@ clearly block. Design it so:
 - **A rule that fails to evaluate escalates, it doesn't crash or silently
   allow.** See `guard.ts`'s `evaluate()`: a throwing rule is treated as
   `escalate`. Governance should fail closed.
+
+## Fail closed: two bugs the suite caught
+
+"Fail closed" is easy to state and easy to get wrong. The dangerous failures
+aren't the ones that throw — a crash is loud and stops the line — but the ones
+that silently *allow*. Mainspring's governance and gate carry an adversarial
+test suite (`packages/governance/test/adversarial.test.ts` and
+`packages/core/test/gate-edge.test.ts`) whose entire theme is: any ambiguity,
+malformation, or hostile input must block or contain, never pass. Two real bugs
+it surfaced and pinned with regression tests are worth walking through, because
+they are the exact shape a compromised or prompt-injected brain would exploit.
+
+**1. The NaN spend that compared its way past every cap.** `checkSpendPolicy`
+decides an expense by comparing `amountUsd` against the thresholds. But a brain
+builds `Action` objects in memory, not through JSON (which has no `NaN` or
+`Infinity`), so it can hand the guard `amountUsd: NaN`. And `NaN` — like
+`-Infinity` — compares `false` against *every* `>` and `>=` in the function, so
+the original code fell through all of them to the final `return "allow"`. A
+garbage amount was the one amount that cleared the gate unconditionally. The fix
+is a single line, placed *before* any comparison:
+
+```ts
+if (!Number.isFinite(entry.amountUsd)) return "block";
+```
+
+Not even a valid approval code clears a malformed amount — the guard denies what
+it cannot reason about. The regression is adversarial/5 ("a non-finite expense
+amount fails closed"), asserting `block` for `NaN`, `Infinity`, and `-Infinity`,
+with and without an approval code.
+
+**2. The malformed Action that skipped the secret scan.** `gateAction` used to
+trust that an `Action`'s fields matched its declared TypeScript type. They don't
+have to: the brain is untrusted, and TypeScript is erased at runtime. A `write`
+whose `content` was an *object* rather than a string would sail past
+`looksLikeSecret` (which expects a string) and reach `dispatch.ts` — the secret
+scan effectively skipped; a `ledger` whose `amountUsd` was a string would reach
+the cap arithmetic un-compared. The fix is `structuralReason`, run as the first
+thing in `gateAction`: it inspects each Action's shape through an untyped view
+and blocks anything malformed *before* any content check — fail-closed, with a
+specific reason, rather than thrown through (which would crash the session and
+skip every other queued Action) or passed. `gate-edge` covers the whole family:
+missing `path`, non-string `content`, non-numeric `amountUsd`, path-traversal
+ids, unknown kinds.
+
+Both fixes share one principle, and it's the one to carry into any
+constitution's enforcement: **enumerate what "valid" means and deny the
+complement — don't enumerate the bad cases and allow the rest.** The same
+instinct is why `evaluate()` treats a *throwing* rule as `escalate`, why
+`decide()` treats an unparseable cron expression as "not due" instead of
+running, and why `Broker#request` denies an unknown capability outright. A guard
+that isn't sure must never be the reason something happened.
 
 ## Worked examples
 

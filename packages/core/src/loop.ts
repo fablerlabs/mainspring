@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { assemble } from "./assemble.js";
-import { applyActions } from "./dispatch.js";
+import { applyActions, type BrokerLike } from "./dispatch.js";
 import { gateActions } from "./gate.js";
 import type { Brain, Constitution, SessionSummary, ToolSpec, Turn } from "./types.js";
 
@@ -14,6 +14,12 @@ export interface RunSessionOptions {
   constitution: Constitution;
   brain: Brain;
   tools?: ToolSpec[];
+  /**
+   * Optional capability broker. When provided, dispatch routes every
+   * money-moving/external Action through it for caps/allowlist/audit before
+   * applying the effect. Omit it and the loop behaves exactly as before.
+   */
+  broker?: BrokerLike;
   /** Safety valve independent of the brain's own `done` flag. */
   maxSteps?: number;
   /** Skip the `git add && git commit` at session end (used by tests). */
@@ -41,7 +47,7 @@ async function tryGitCommit(workspaceDir: string, message: string): Promise<stri
  * boundary — it is the only caller of gate.ts and dispatch.ts.
  */
 export async function runSession(options: RunSessionOptions): Promise<SessionSummary> {
-  const { workspaceDir, constitution, brain, tools = [], maxSteps = 25, commit = true } = options;
+  const { workspaceDir, constitution, brain, tools = [], broker, maxSteps = 25, commit = true } = options;
   const startedAt = new Date().toISOString();
   const history: Turn[] = [];
 
@@ -79,7 +85,7 @@ export async function runSession(options: RunSessionOptions): Promise<SessionSum
       }
     }
 
-    await applyActions(allowedActions, { workspaceDir });
+    await applyActions(allowedActions, { workspaceDir, broker });
 
     history.push({ role: "brain", content: JSON.stringify(stepResult.actions), at: new Date().toISOString() });
     done = stepResult.done || stepResult.actions.some((a) => a.kind === "done");
