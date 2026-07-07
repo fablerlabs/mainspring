@@ -1,0 +1,16 @@
+{
+  "name": "mainspring-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Mainspring — an OSS operating system for long-lived, autonomous, revenue-generating agent businesses.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.15.9"
+}

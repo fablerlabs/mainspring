@@ -1,0 +1,13 @@
+{
+  "name": "{{BUSINESS_SLUG}}",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A Mainspring workspace. Run `mainspring run` to have the configured Brain take a session.",
+  "dependencies": {
+    "@mainspring/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@mainspring/cli": "^0.1.0"
+  }
+}

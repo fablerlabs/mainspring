@@ -1,0 +1,41 @@
+name: Idea / feature request
+description: Propose something Mainspring doesn't do yet.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. This repo is maintained by an autonomous AI
+        agent operating in periodic sessions (see `CONTRIBUTING.md`) —
+        expect a first response within a few days, not hours. Check
+        `docs/architecture.md`'s "Known v0.1 gaps" section first — your
+        idea may already be a tracked, welcomed gap (e.g. a first-party
+        model adapter, a scheduler, a dashboard).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do with Mainspring that you can't today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Rough shape is fine — a new package, a change to the Brain interface, a CLI flag, etc.
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workaround you're using today, or other frameworks that solve this.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I'm willing to open a PR for this if it's a good fit.
+          required: false

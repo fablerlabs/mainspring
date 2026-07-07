@@ -1,0 +1,23 @@
+{
+  "name": "@mainspring/cli",
+  "version": "0.1.0",
+  "description": "Mainspring CLI — init, run, status, and doctor a long-lived agent-business workspace.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "mainspring": "./dist/bin.js"
+  },
+  "main": "./dist/bin.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"no unit tests in @mainspring/cli; see @mainspring/core\""
+  },
+  "dependencies": {
+    "@mainspring/core": "workspace:*",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
+  }
+}

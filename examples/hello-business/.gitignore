@@ -1,0 +1,4 @@
+node_modules/
+.mainspring/*.mjs
+*.log
+.DS_Store

@@ -1,0 +1,13 @@
+{
+  "name": "hello-business",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A ready-to-run Mainspring workspace using the zero-API-key EchoBrain — proves the loop end to end.",
+  "dependencies": {
+    "@mainspring/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@mainspring/cli": "workspace:*"
+  }
+}
