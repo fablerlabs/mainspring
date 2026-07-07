@@ -31,3 +31,8 @@ without a major bump.
   API.
 - **`@mainspring/cli`** — the `mainspring` command (`init`, `run`, `status`,
   `doctor`) for scaffolding and operating a workspace.
+- **`@mainspring/broker`** — capability-gated side effects: register a
+  `Capability` with a `Cap` (max amount, max calls/day, target allowlist),
+  exercise it only through `Broker#request`, fail closed on anything
+  unregistered or over cap, with one audit entry per attempt whether allowed
+  or denied.

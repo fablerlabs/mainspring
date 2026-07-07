@@ -14,9 +14,9 @@ Where [LangChain](https://github.com/langchain-ai/langchain),
 [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT), and
 [CrewAI](https://github.com/crewAIInc/crewAI) orchestrate agents to finish a
 **task**, Mainspring is the runtime for a persistent **operation**: durable
-memory across amnesiac sessions, real accounting, capped and governed side
-effects, a leak-proof publish gate, and human-in-the-loop oversight — all
-model-agnostic. **The wedge, in three words: MEMORY. MONEY. GOVERNANCE.**
+memory across amnesiac sessions, real accounting, capability-gated and
+audited side effects, a leak-proof publish gate, and human-in-the-loop
+oversight — all model-agnostic. **The wedge, in three words: MEMORY. MONEY. GOVERNANCE.**
 
 Built by an autonomous AI agent ([Fabler Labs](https://fablerlabs.com)) as
 part of a real, running, revenue-tracked experiment — this repo is that
@@ -54,6 +54,7 @@ trust-boundary reasoning behind that split.
 | [`@mainspring/ledger`](packages/ledger) | Append-only `LEDGER.csv` management with balance invariants and spend-cap thresholds — the Constitution's Money rules as code. | Phase 1 — tested standalone; `core`'s `dispatch.ts` still does its own inline ledger writes. |
 | [`@mainspring/governance`](packages/governance) | Constitution-as-code: hard rules the brain cannot override, loaded from `CONSTITUTION.md` and enforced as Action guards. | Phase 1 — tested standalone; `core`'s built-in `gate.ts` doesn't call it yet. |
 | [`@mainspring/brains`](packages/brains) | Reference `Brain` implementations: a scripted `MockBrain` for tests, and a zero-SDK `ClaudeBrain` adapter for Anthropic's Messages API. | Phase 1 — request/response mapping is unit-tested; the live-network path is unverified end to end. |
+| [`@mainspring/broker`](packages/broker) | Capability-gated side effects: register a `Capability` with a `Cap` (max amount, max calls/day, target allowlist), then exercise it only through `Broker#request` — fail-closed on anything unregistered or over cap, one audit entry per attempt, allow or deny. | Phase 1 — tested standalone; not yet wired into `dispatch.ts`. |
 
 "Phase 1" above means exactly one thing: the package is real, has its own
 passing test suite, and builds clean under `tsc --strict` — but the
@@ -134,6 +135,34 @@ worked `ClaudeBrain` adapter and a scripted `MockBrain` for tests. See
 [`docs/brains.md`](docs/brains.md) for the full contract, the gate-feedback
 rules, and the worked adapter walkthrough.
 
+## Side effects go through a broker
+
+`@mainspring/core`'s `gate.ts` enforces the Constitution's money and secret
+rules inline; `@mainspring/broker` is the reusable, model-agnostic shape of
+that same idea for any other capability (spend, notify, publish, ...). You
+register a `Capability` once with a `Cap` — max amount, max calls per day, an
+optional target allowlist — and every `request()` against it is checked
+before the handler runs: unregistered, over-cap, or off-allowlist is a deny,
+and every attempt, allow or deny, appends one entry to the audit trail.
+
+```ts
+import { Broker } from "@mainspring/broker";
+
+const broker = new Broker();
+broker.register(
+  { id: "spend", description: "capped USD spend", cap: { maxAmountUsd: 75, maxCallsPerDay: 10 } },
+  (req) => ({ charged: req.amountUsd }),
+);
+
+await broker.request({ capability: "spend", op: "vps-hosting", amountUsd: 40 });
+// -> { allowed: true, reason: "ok", output: { charged: 40 } }
+
+await broker.request({ capability: "spend", op: "ad-spend", amountUsd: 200 });
+// -> { allowed: false, reason: 'amountUsd 200 exceeds cap 75 for capability "spend"' }
+
+broker.audit; // both attempts, allow and deny, oldest first — nothing is dropped
+```
+
 ## Mainspring vs. task-orchestration frameworks
 
 | | Mainspring | LangChain / AutoGPT / CrewAI |
@@ -154,6 +183,9 @@ rules, and the worked adapter walkthrough.
 - [`docs/writing-a-constitution.md`](docs/writing-a-constitution.md) — how
   to split hard rules / policy / doctrine when you write your own
   `CONSTITUTION.md`.
+- [`docs/deploying.md`](docs/deploying.md) — running a workspace unattended:
+  the supervisor model, cron/systemd/CI recipes, the `STOP` kill switch, and
+  privilege separation.
 - [`docs/roadmap.md`](docs/roadmap.md) — what's shipped, what's in
   progress, and what's explicitly out of scope.
 

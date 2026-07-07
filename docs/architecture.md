@@ -81,6 +81,29 @@ separately as a `ToolRegistry` passed into `dispatch.ts`'s context, keeping
 "what tools exist" (visible to the Brain) separate from "how a tool is
 executed" (trusted-side only, never visible to the Brain).
 
+## Broker: capability-gated side effects
+
+`@mainspring/broker` (`packages/broker/src/`) generalizes a pattern already
+proven outside this codebase: a side-effect-capable interface that's owned
+and reachable only through a narrow, capped surface, so the process asking
+for the side effect never holds the raw credential behind it — a root-owned
+broker binary outside the agent's own reach, invoked only for a fixed set of
+capped operations, is the real-world shape this library models. `Broker`
+registers a named `Capability` (e.g. `"spend"`, `"notify-owner"`) with a
+`Cap` — a max `amountUsd`, a max `maxCallsPerDay`, and an optional target
+`allowlist` — and every `request()` against it is checked before its handler
+ever runs.
+
+It fails closed in every direction: an unregistered capability, a missing or
+off-allowlist target, an over-amount request, or a request past its daily
+call cap are all denied without the handler ever being called. Every
+attempt — allow or deny alike — appends one entry to `broker.audit`, so what
+was *tried* is as visible as what actually happened. `@mainspring/core`'s own
+`gate.ts` enforces the Constitution's money and secret rules inline today
+(see the trust boundary above); `broker` is the reusable shape for any other
+capability that wants the same fail-closed, fully-audited guarantee without
+hand-rolling it.
+
 ## Loading `mainspring.config.ts` without a bundler
 
 `packages/cli/src/loadConfig.ts` uses the TypeScript compiler API
