@@ -1,14 +1,14 @@
 # Mainspring
 
-**Mainspring is an open-source operating system for running a *business*, not
-a task.**
+**Mainspring is a model-agnostic operating system for running a *business*,
+not a task.**
 
 You give it a constitution — a mission, hard rules, and money caps, written
 as a plain markdown file. You plug in any LLM as its "brain." It wakes on a
 timer, forever: reads its own memory from disk, does a slice of work, keeps
 a real ledger, and hands anything it can't safely do alone to a
-human-approval queue and a live dashboard. Then it goes back to sleep until
-the next wake-up, with no memory except what it wrote to disk.
+human-approval queue. Then it goes back to sleep until the next wake-up,
+with no memory except what it wrote to disk.
 
 Where [LangChain](https://github.com/langchain-ai/langchain),
 [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT), and
@@ -16,82 +16,84 @@ Where [LangChain](https://github.com/langchain-ai/langchain),
 **task**, Mainspring is the runtime for a persistent **operation**: durable
 memory across amnesiac sessions, real accounting, capped and governed side
 effects, a leak-proof publish gate, and human-in-the-loop oversight — all
-model-agnostic.
-
-**The wedge, in three words: MEMORY. MONEY. GOVERNANCE.**
+model-agnostic. **The wedge, in three words: MEMORY. MONEY. GOVERNANCE.**
 
 Built by an autonomous AI agent ([Fabler Labs](https://fablerlabs.com)) as
 part of a real, running, revenue-tracked experiment — this repo is that
-agent's own runtime, open-sourced. See [`docs/architecture.md`](docs/architecture.md)
-for the module map.
+agent's own runtime, open-sourced.
 
-## The loop
+## How the loop works
 
-```
- ┌───────────────────────────────────────────────────────────────────┐
- │  wake on a timer (cron / systemd / anything that runs `mainspring  │
- │  run` on a schedule) — the process itself holds no memory          │
- └──────────────────────────────┬───────────────────────────────────┘
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │   assemble.ts    │  read STATE.md, journal tail,
-                        │                  │  LEDGER.csv tail, inbox/,
-                        │                  │  health.json, relay/, queue/
-                        └────────┬─────────┘
-                                 │  SessionInput
-                                 ▼
-                        ┌─────────────────┐
-                        │   Brain.step()   │  PURE reasoning. Proposes
-                        │  (swappable)     │  Action[]. Never touches disk,
-                        │                  │  network, or a secret.
-                        └────────┬─────────┘
-                                 │  Action[]
-                                 ▼
-                        ┌─────────────────┐
-                        │     gate.ts      │  checks every Action against
-                        │                  │  the Constitution: money caps,
-                        │                  │  path safety, secret patterns,
-                        │                  │  allowed tools. Blocks + logs
-                        │                  │  the reason; never throws away
-                        │                  │  the "why."
-                        └────────┬─────────┘
-                                 │  allowed Action[]
-                                 ▼
-                        ┌─────────────────┐
-                        │   dispatch.ts    │  the ONLY code that writes to
-                        │                  │  disk: journal/state/queue/
-                        │                  │  relay files, LEDGER.csv,
-                        │                  │  outbox/notifications.log
-                        └────────┬─────────┘
-                                 │
-                                 ▼
-                        git add -A && git commit   (the loop's memory
-                                                     write is durable and
-                                                     auditable by construction)
-                                 │
-                                 ▼
-                     sleep until the next scheduled wake-up
-```
+Every wake-up runs the same four steps, and nothing skips them:
 
-`assemble → Brain.step → gate → dispatch` is the whole trust boundary. A
-Brain can propose anything; it can never execute anything. That split is
-what makes the brain swappable — and what makes the operation safe to leave
-running unattended.
+1. **`assemble`** reads the workspace — `STATE.md`, the journal tail,
+   `LEDGER.csv`, `inbox/`, `health.json` — into one `SessionInput`.
+2. **`Brain.step()`** is pure reasoning over that input. It proposes a list
+   of `Action`s and never touches disk, network, or a secret itself.
+3. **`gate`** checks every proposed `Action` against the Constitution —
+   money caps, workspace path safety, secret-shaped content — before
+   anything happens, and logs *why* whatever it blocks was blocked.
+4. **`dispatch`** is the only code that writes: journal/state/ledger/queue
+   files, then `git add -A && git commit`, so the workspace's history is an
+   audit trail independent of the Brain's own self-report.
 
-## 60-second quickstart
+`assemble → Brain.step → gate → dispatch → commit → sleep`. A Brain can
+propose anything; it can never execute anything. See
+[`docs/architecture.md`](docs/architecture.md) for the module map and the
+trust-boundary reasoning behind that split.
+
+## Packages
+
+| Package | Purpose | Status |
+|---|---|---|
+| [`@mainspring/core`](packages/core) | The Brain contract and the constitution-enforcing session loop (`assemble → gate → dispatch → commit`), plus `EchoBrain`, a zero-API-key reference Brain. | Stable — the loop `@mainspring/cli` runs, tested end to end. |
+| [`@mainspring/cli`](packages/cli) | The `mainspring` bin: `init`, `run`, `status`, `doctor` a workspace. | Stable — all four commands verified against a real workspace. |
+| [`@mainspring/memory`](packages/memory) | Durable, deterministic utilities for STATE compaction, the journal, and the session log. | Phase 1 — tested standalone; not yet called by the reference loop. |
+| [`@mainspring/scrub`](packages/scrub) | Detect secret-shaped strings in content before any publish or notify action. | Phase 1 — tested standalone; not yet wired into `dispatch.ts`. |
+| [`@mainspring/relay`](packages/relay) | Zero-dependency human-in-the-loop client that speaks the Fabler Relay wire protocol — the governance leg of the loop. | Phase 1 — tested standalone; a workspace's own Brain/config wires it in today. |
+| [`@mainspring/ledger`](packages/ledger) | Append-only `LEDGER.csv` management with balance invariants and spend-cap thresholds — the Constitution's Money rules as code. | Phase 1 — tested standalone; `core`'s `dispatch.ts` still does its own inline ledger writes. |
+| [`@mainspring/governance`](packages/governance) | Constitution-as-code: hard rules the brain cannot override, loaded from `CONSTITUTION.md` and enforced as Action guards. | Phase 1 — tested standalone; `core`'s built-in `gate.ts` doesn't call it yet. |
+| [`@mainspring/brains`](packages/brains) | Reference `Brain` implementations: a scripted `MockBrain` for tests, and a zero-SDK `ClaudeBrain` adapter for Anthropic's Messages API. | Phase 1 — request/response mapping is unit-tested; the live-network path is unverified end to end. |
+
+"Phase 1" above means exactly one thing: the package is real, has its own
+passing test suite, and builds clean under `tsc --strict` — but the
+reference loop in `@mainspring/core` doesn't call it automatically yet.
+Nothing here is a stub; a workspace's own `mainspring.config.ts` can import
+and use any of them today. Closing that integration gap is the next
+milestone — see [`docs/roadmap.md`](docs/roadmap.md).
+
+Plus docs (`docs/`) and two non-code starting points: `templates/default/`
+(what `mainspring init` scaffolds) and `examples/hello-business/` (a
+pre-wired workspace using `EchoBrain`, no API key needed).
+
+## Quickstart
+
+`@mainspring/*` isn't published to npm yet, so the fastest way to see the
+loop run for real is inside this repo's own workspace, against the
+pre-wired `examples/hello-business`:
 
 ```bash
-npx @mainspring/cli init my-biz --brain echo
-cd my-biz
-pnpm install        # links @mainspring/core (or: npm install / yarn)
-mainspring run      # EchoBrain: no API key, writes a journal + ledger line, commits
-mainspring status    # see what the last session did
-mainspring schedule  # (roadmap) install a cron/systemd timer to wake it forever
+git clone https://github.com/fablerlabs/mainspring
+cd mainspring
+pnpm install
+pnpm -r build
+
+cd examples/hello-business
+node ../../packages/cli/dist/bin.js run      # EchoBrain: writes a journal + ledger line, commits
+node ../../packages/cli/dist/bin.js status   # see what that session did
 ```
 
-Swap `EchoBrain` for a real model by editing `mainspring.config.ts` — see
-the Brain interface below.
+`mainspring init <dir>` (see `packages/cli/src/commands/init.ts`) scaffolds
+a fresh workspace from `templates/default/` the same way, for when you're
+ready to start your own — swap `EchoBrain` for a real Brain by editing the
+generated `mainspring.config.ts`. Its generated "next steps" currently
+assume `@mainspring/core` is installable from npm, which isn't true until
+this repo's first publish; until then, point a new workspace's
+`mainspring.config.ts` at this monorepo via a `workspace:*`/local `file:`
+dependency, the way `examples/hello-business` does.
+
+A dedicated `examples/quickstart` walkthrough is planned but not on `main`
+yet — `examples/hello-business` is the working stand-in.
 
 ## The Brain interface
 
@@ -127,8 +129,10 @@ interface StepResult {
 Because `step()` is the entire surface area, adapting a new model/provider
 is one file: translate `SessionInput` into that provider's prompt/tool-call
 format, translate its response back into `Action[]`. `@mainspring/core`
-ships `EchoBrain` — a deterministic, zero-API-key Brain that proves the loop
-end to end — as the reference implementation to copy from.
+ships `EchoBrain` as the minimal reference; `@mainspring/brains` ships a
+worked `ClaudeBrain` adapter and a scripted `MockBrain` for tests. See
+[`docs/brains.md`](docs/brains.md) for the full contract, the gate-feedback
+rules, and the worked adapter walkthrough.
 
 ## Mainspring vs. task-orchestration frameworks
 
@@ -138,34 +142,35 @@ end to end — as the reference implementation to copy from.
 | Memory | durable, on-disk, survives amnesiac sessions (`STATE.md`, journal, ledger) by design | typically in-process; persistence is bolted on per app |
 | Money | first-class `ledger` Action + enforced caps (`gate.ts`) | not modeled — spend tracking is DIY |
 | Governance | every side effect passes a Constitution-checked gate before it happens | tool calls generally execute directly |
-| Human oversight | built-in `relay` (approval queue) + `notify` Actions | ad hoc, if present |
+| Human oversight | `relay` Action + approval queue, `notify` Actions | ad hoc, if present |
 | Model swap | one `Brain.step()` adapter; loop and gate never change | usually means re-plumbing the app |
+
+## More docs
+
+- [`docs/architecture.md`](docs/architecture.md) — module map and the trust
+  boundary in detail.
+- [`docs/brains.md`](docs/brains.md) — the full Brain contract, gate
+  feedback rules, and a worked `ClaudeBrain`-style adapter.
+- [`docs/writing-a-constitution.md`](docs/writing-a-constitution.md) — how
+  to split hard rules / policy / doctrine when you write your own
+  `CONSTITUTION.md`.
+- [`docs/roadmap.md`](docs/roadmap.md) — what's shipped, what's in
+  progress, and what's explicitly out of scope.
 
 ## Honesty note
 
-This project was built end-to-end by an autonomous AI agent operating under
-its own constitution (the same pattern this framework generalizes), as part
-of [Fabler Labs](https://fablerlabs.com)'s public experiment in running a
-real business with an AI operator. It is offered as-is under the
-[Apache-2.0](LICENSE) license. Nothing in this repo, its docs, or its
-example workspace contains real credentials, customer data, or Fabler
-Labs–specific business logic — `templates/default/` and
-`examples/hello-business/` are generic starting points.
-
-## Repo layout
-
-```
-mainspring/
-  packages/core/     the Brain contract + the constitution-enforcing loop
-  packages/cli/       `mainspring` bin: init / run / status / doctor
-  templates/default/  a fresh workspace, scaffolded by `mainspring init`
-  examples/hello-business/  a ready-to-run workspace (EchoBrain, no API key)
-  docs/architecture.md      module map + how brain-swapping works
-```
+This project is built and run end-to-end by an autonomous AI agent
+operating under its own constitution (the same pattern this framework
+generalizes), as part of [Fabler Labs](https://fablerlabs.com)'s public
+experiment in running a real business with an AI operator. Nothing in this
+repo, its docs, or its example workspace contains real credentials,
+customer data, or Fabler Labs–specific business logic —
+`templates/default/` and `examples/hello-business/` are generic starting
+points.
 
 ## Status
 
-Early skeleton (v0.1). The loop, gate, dispatch, CLI, and EchoBrain are
-real and tested. Scheduling (`mainspring schedule`), a dashboard, and
-first-party model adapters (OpenAI/Anthropic/local) are on the roadmap —
-contributions welcome.
+Phase 1. Licensed [Apache-2.0](LICENSE). Built and run by an autonomous
+agent, in the open, as described above — no fake benchmarks, no stars to
+chase. Contributions welcome; see [`CONTRIBUTING.md`](CONTRIBUTING.md) for
+dev setup, package layout, and how issues/PRs get triaged.
