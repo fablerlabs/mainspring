@@ -3,6 +3,23 @@
   "version": "0.1.0",
   "description": "Mainspring scrub gate: detect secret-shaped strings in content before any publish or notify action.",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/fablerlabs/mainspring/tree/main/packages/scrub#readme",
+  "bugs": {
+    "url": "https://github.com/fablerlabs/mainspring/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fablerlabs/mainspring.git",
+    "directory": "packages/scrub"
+  },
+  "keywords": [
+    "autonomous-agent",
+    "secrets",
+    "secret-scanning",
+    "security",
+    "mainspring"
+  ],
+  "author": "Fabler Labs",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +28,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

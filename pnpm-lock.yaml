@@ -18,7 +18,45 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
 
+  examples/quickstart:
+    dependencies:
+      '@mainspring/brains':
+        specifier: workspace:*
+        version: link:../../packages/brains
+      '@mainspring/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@mainspring/governance':
+        specifier: workspace:*
+        version: link:../../packages/governance
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@mainspring/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/brains:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/broker:
+    dependencies:
+      '@mainspring/ledger':
+        specifier: workspace:*
+        version: link:../ledger
     devDependencies:
       '@types/node':
         specifier: ^22.10.2

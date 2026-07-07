@@ -1,0 +1,27 @@
+{
+  "name": "@mainspring/broker",
+  "version": "0.1.0",
+  "description": "Mainspring broker: a capability-gated side-effect boundary — spend/message/publish requests are checked against per-capability caps and audited, allow or deny, before anything happens. The brain never holds a raw secret.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
+  },
+  "dependencies": {
+    "@mainspring/ledger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}

@@ -117,6 +117,12 @@ export function checkSpendPolicy(
   approvalCodePresent: boolean,
 ): Verdict {
   if (entry.type !== "expense") return "allow";
+  // Fail closed on a malformed amount. A compromised brain builds Action
+  // objects directly (not via JSON, which has no NaN/Infinity), so a garbage
+  // amountUsd can reach here — and NaN / -Infinity compare false against every
+  // threshold below, which would silently return "allow". Deny outright; not
+  // even an approval code clears an amount the guard cannot reason about.
+  if (!Number.isFinite(entry.amountUsd)) return "block";
   const projected = spentSoFarUsd + entry.amountUsd;
   if (projected > caps.perSessionUsd) return "block";
   if (entry.amountUsd >= caps.approvalAboveUsd) {

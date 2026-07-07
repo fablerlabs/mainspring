@@ -12,7 +12,7 @@ Usage:
   mainspring init <dir> [--name "My Business"] [--brain echo]
   mainspring run [--workspace .] [--no-commit]
   mainspring status [--workspace .]
-  mainspring doctor
+  mainspring doctor [--workspace .]
 `);
 }
 
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
       await status(args);
       return;
     case "doctor":
-      await doctor();
+      await doctor(args);
       return;
     case undefined:
     case "-h":

@@ -3,15 +3,39 @@
   "version": "0.1.0",
   "description": "Mainspring CLI — init, run, status, and doctor a long-lived agent-business workspace.",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/fablerlabs/mainspring/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/fablerlabs/mainspring/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fablerlabs/mainspring.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "autonomous-agent",
+    "cli",
+    "agent-framework",
+    "governance",
+    "mainspring"
+  ],
+  "author": "Fabler Labs",
   "type": "module",
   "bin": {
     "mainspring": "./dist/bin.js"
   },
   "main": "./dist/bin.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no unit tests in @mainspring/cli; see @mainspring/core\""
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
   },
   "dependencies": {
     "@mainspring/core": "workspace:*",
