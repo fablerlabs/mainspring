@@ -42,6 +42,20 @@ without a major bump.
   single wake-at time instead of hot-retrying. Pure and clock-injected
   (no internal `Date.now()`). See `docs/handling-provider-limits.md`.
 
+### Security
+
+- **`@mainspring/governance` + `@mainspring/scrub`** — red-team round 2
+  hardening, each fix backed by a versioned attack-fixture corpus
+  (`test/fixtures/injection-corpus.json`, `secret-corpus.json`): expense
+  amounts ≤ 0 are now blocked (prevented "banking" a fake negative balance
+  to hide a later real spend under the cap); the honesty-disclosure check
+  requires an *own* `disclosedAsAI` property (a `__proto__`-inherited value
+  no longer satisfies it); secret scanning of `run` args now walks the
+  prototype chain (`JSON.stringify` alone misses inherited properties);
+  `write` paths gained a traversal rule (`..`, absolute, `~`, Windows-drive,
+  NUL); and both gates strip zero-width/bidi/BOM characters before secret
+  pattern matching, closing a split-key evasion.
+
 ### Changed
 
 - **`@mainspring/core`** — `dispatch` now accepts an optional injected
@@ -52,6 +66,16 @@ without a major bump.
   unregistered capability — fail-closed) surfaces as a gate-style refusal.
   The seam is structural (`BrokerLike`), so `core` keeps zero runtime
   dependencies. With no broker injected, dispatch behavior is unchanged.
+- **`@mainspring/core`** — `gate` now accepts an optional injected
+  `@mainspring/governance` guard (`gateAction(s)` and `runSession({
+  governance })`). When provided, every Action the built-in gate would allow
+  is additionally checked against the constitution-as-code rule set; a
+  `block`/`escalate` verdict (or a guard that throws — fail-closed) turns the
+  allow into a denial whose reason carries the fired rules' constitution
+  citations. Governance is consulted only for already-allowed Actions, so it
+  can add hard-rule restrictions but never loosen a built-in denial. The seam
+  is structural (`GovernanceGuard`), so `core` keeps zero runtime
+  dependencies. With no governance injected, gate behavior is unchanged.
 - **`@mainspring/cli`** — `mainspring init` grew `--template minimal|full`
   (Constitution variant selection, `minimal` by default) and `--force`
   (scaffold into a non-empty directory); it now also creates `journal/` up

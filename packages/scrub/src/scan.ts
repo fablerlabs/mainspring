@@ -24,10 +24,22 @@ function redact(match: string): string {
   return `${match.slice(0, keep)}${masked}${match.slice(-keep)}`;
 }
 
+/**
+ * Zero-width/format characters (ZWSP, ZWNJ, ZWJ, word joiner, bidi overrides,
+ * BOM, soft hyphen) have no visible glyph but split a contiguous secret
+ * literal for regex purposes — "sk_live_" + ZWSP + "4eC39..." reads identically
+ * to a human but no longer matches a `[A-Za-z0-9]{16,}` run. Strip them before
+ * matching so this can't be used to smuggle a secret past a shape check.
+ */
+const INVISIBLE_CHARS = new RegExp(
+  "[\\u200B-\\u200F\\u202A-\\u202E\\u2060-\\u2064\\uFEFF\\u00AD]",
+  "g",
+);
+
 export function scan(content: string, opts: ScanOptions = {}): Finding[] {
   const patterns = opts.patterns ?? ALL_PATTERNS;
   const findings: Finding[] = [];
-  const lines = content.split(/\r?\n/);
+  const lines = content.replace(INVISIBLE_CHARS, "").split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     for (const pattern of patterns) {

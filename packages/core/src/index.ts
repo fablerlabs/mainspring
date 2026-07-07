@@ -1,7 +1,15 @@
 export * from "./types.js";
 export { defineConfig, type MainspringConfig } from "./defineConfig.js";
 export { assemble } from "./assemble.js";
-export { gateAction, gateActions, type GateContext } from "./gate.js";
+export {
+  gateAction,
+  gateActions,
+  type GateContext,
+  type GovernanceGuard,
+  type GovernanceResult,
+  type GovernanceFiredRule,
+  type GovernanceVerdict,
+} from "./gate.js";
 export {
   applyAction,
   applyActions,

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { assemble } from "./assemble.js";
 import { applyActions, type BrokerLike } from "./dispatch.js";
-import { gateActions } from "./gate.js";
+import { gateActions, type GovernanceGuard } from "./gate.js";
 import type { Brain, Constitution, SessionSummary, ToolSpec, Turn } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -20,6 +20,13 @@ export interface RunSessionOptions {
    * applying the effect. Omit it and the loop behaves exactly as before.
    */
   broker?: BrokerLike;
+  /**
+   * Optional constitution-as-code guard (built from `@mainspring/governance`).
+   * When provided, every Action the built-in gate would allow is additionally
+   * checked against it before dispatch; a hard-rule violation denies with the
+   * constitution citation. Omit it and the loop behaves exactly as before.
+   */
+  governance?: GovernanceGuard;
   /** Safety valve independent of the brain's own `done` flag. */
   maxSteps?: number;
   /** Skip the `git add && git commit` at session end (used by tests). */
@@ -47,7 +54,7 @@ async function tryGitCommit(workspaceDir: string, message: string): Promise<stri
  * boundary — it is the only caller of gate.ts and dispatch.ts.
  */
 export async function runSession(options: RunSessionOptions): Promise<SessionSummary> {
-  const { workspaceDir, constitution, brain, tools = [], broker, maxSteps = 25, commit = true } = options;
+  const { workspaceDir, constitution, brain, tools = [], broker, governance, maxSteps = 25, commit = true } = options;
   const startedAt = new Date().toISOString();
   const history: Turn[] = [];
 
@@ -70,6 +77,7 @@ export async function runSession(options: RunSessionOptions): Promise<SessionSum
       workspaceDir,
       spentSoFarUsd: spentUsd,
       tools,
+      governance,
     });
 
     const allowedActions = decisions.filter((d) => d.allowed).map((d) => d.action);

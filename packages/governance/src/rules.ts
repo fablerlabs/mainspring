@@ -67,8 +67,46 @@ const SECRET_LIKE_PATTERNS: RegExp[] = [
   /\bAWS_[A-Z_]*=\s*\S+/,
 ];
 
+/**
+ * Zero-width/format characters (ZWSP, ZWNJ, ZWJ, word joiner, bidi overrides,
+ * BOM, soft hyphen) have no visible glyph but split a contiguous secret
+ * literal for regex purposes — e.g. "sk_live_" + ZWSP + "4eC39..." reads
+ * identically to a human but no longer matches `[A-Za-z0-9]{16,}`. Strip them
+ * before pattern matching so this can't be used to smuggle a secret past the
+ * shape check.
+ */
+const INVISIBLE_CHARS = new RegExp(
+  "[\\u200B-\\u200F\\u202A-\\u202E\\u2060-\\u2064\\uFEFF\\u00AD]",
+  "g",
+);
+
 function looksLikeSecret(content: string): boolean {
-  return SECRET_LIKE_PATTERNS.some((re) => re.test(content));
+  const normalized = content.replace(INVISIBLE_CHARS, "");
+  return SECRET_LIKE_PATTERNS.some((re) => re.test(normalized));
+}
+
+/**
+ * `run.args` is attacker-influenced and may be a hostile object built
+ * directly (not via JSON, which cannot fabricate a real prototype chain) —
+ * e.g. `{ text: "hi", __proto__: { secret: "sk_live_..." } }`. JSON.stringify
+ * only serializes *own* enumerable properties, so a value placed on the
+ * prototype is invisible to it while still readable via normal property
+ * access (`args.secret`). A `for...in` loop walks the prototype chain, so
+ * appending its output catches values hidden this way.
+ */
+function stringifyIncludingInherited(value: unknown): string {
+  let text: string;
+  try {
+    text = JSON.stringify(value) ?? String(value);
+  } catch {
+    text = String(value);
+  }
+  if (typeof value === "object" && value !== null) {
+    for (const key in value as Record<string, unknown>) {
+      text += ` ${key}=${String((value as Record<string, unknown>)[key])}`;
+    }
+  }
+  return text;
 }
 
 function textCarriedBy(action: Action): string | null {
@@ -78,11 +116,7 @@ function textCarriedBy(action: Action): string | null {
     case "notify":
       return action.text;
     case "run":
-      try {
-        return JSON.stringify(action.args);
-      } catch {
-        return String(action.args);
-      }
+      return stringifyIncludingInherited(action.args);
     default:
       return null;
   }
@@ -123,6 +157,12 @@ export function checkSpendPolicy(
   // threshold below, which would silently return "allow". Deny outright; not
   // even an approval code clears an amount the guard cannot reason about.
   if (!Number.isFinite(entry.amountUsd)) return "block";
+  // core's LedgerEntry contract says amountUsd is "a positive number; sign is
+  // implied by type" — a non-positive "expense" is already off-contract. Left
+  // unblocked, a negative expense would silently *reduce* the caller's running
+  // spentSoFarUsd total on the next session, letting a compromised brain bank
+  // a negative balance to hide a later large expense under the per-session cap.
+  if (entry.amountUsd <= 0) return "block";
   const projected = spentSoFarUsd + entry.amountUsd;
   if (projected > caps.perSessionUsd) return "block";
   if (entry.amountUsd >= caps.approvalAboveUsd) {
@@ -182,13 +222,54 @@ function honestyDisclosureRule(config: GovernanceConfig): Rule {
       if (action.kind !== "run") return "allow";
       if (!pattern.test(action.tool)) return "allow";
       const args = action.args;
-      const disclosed = typeof args === "object" && args !== null && (args as Record<string, unknown>).disclosedAsAI === true;
+      // Must be an *own* property: an object literal like `{ __proto__: {
+      // disclosedAsAI: true } }` sets the object's real prototype (a JS
+      // object-literal special case, unlike JSON.parse), so plain property
+      // access (`args.disclosedAsAI`) walks the chain and reads `true` from
+      // the prototype even though the action never actually declared it.
+      const disclosed =
+        typeof args === "object" &&
+        args !== null &&
+        Object.prototype.hasOwnProperty.call(args, "disclosedAsAI") &&
+        (args as Record<string, unknown>).disclosedAsAI === true;
       return disclosed ? "allow" : "block";
+    },
+  };
+}
+
+const PATH_TRAVERSAL_SEGMENT = /(^|[/\\])\.\.([/\\]|$)/;
+const WINDOWS_DRIVE = /^[A-Za-z]:[\\/]/;
+
+/**
+ * A `write` action's path must stay inside the workspace: no `..` segments
+ * (relative escape), no absolute paths or `~` (escape via a rooted path), and
+ * no embedded NUL (some filesystem APIs truncate a path at NUL, letting the
+ * visible-looking suffix hide the real target). Unlike `content`, `path` was
+ * previously ungoverned by any built-in rule.
+ */
+function pathTraversalRule(): Rule {
+  return {
+    id: "path-traversal",
+    description: "A write action's path must stay within the workspace — no `..` segments, absolute paths, `~`, or NUL bytes.",
+    test(action) {
+      if (action.kind !== "write") return "allow";
+      const path = action.path;
+      if (typeof path !== "string" || path.length === 0) return "block";
+      if (path.includes("\0")) return "block";
+      if (PATH_TRAVERSAL_SEGMENT.test(path)) return "block";
+      if (path.startsWith("/") || path.startsWith("~") || WINDOWS_DRIVE.test(path)) return "block";
+      return "allow";
     },
   };
 }
 
 /** Builds the full built-in rule set, closing over the workspace's live policy config. */
 export function createBuiltInRules(config: GovernanceConfig = {}): Rule[] {
-  return [noSecretsRule(), spendCapsRule(config), externalAllowlistRule(config), honestyDisclosureRule(config)];
+  return [
+    noSecretsRule(),
+    spendCapsRule(config),
+    externalAllowlistRule(config),
+    honestyDisclosureRule(config),
+    pathTraversalRule(),
+  ];
 }

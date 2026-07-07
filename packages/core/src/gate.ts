@@ -1,12 +1,62 @@
 import { resolve, sep } from "node:path";
 import type { Action, Constitution, GateDecision, ToolSpec } from "./types.js";
 
+/**
+ * The subset of `@mainspring/governance` the gate depends on, mirrored here
+ * structurally so `core` keeps zero runtime dependencies — `governance` stays
+ * a *type-only* dependency, and the two packages remain build-order-
+ * independent (`governance` already mirrors core's `Action` the same way). A
+ * real `governance` value satisfies these types as-is.
+ */
+export type GovernanceVerdict = "allow" | "block" | "escalate";
+
+/** A single governance rule that fired (returned a non-`allow` verdict). Mirrors `@mainspring/governance`'s `FiredRule`. */
+export interface GovernanceFiredRule {
+  id: string;
+  description: string;
+  verdict: GovernanceVerdict;
+}
+
+/** Outcome of evaluating one Action against a governance rule set. Mirrors `@mainspring/governance`'s `GuardResult`. */
+export interface GovernanceResult {
+  verdict: GovernanceVerdict;
+  firedRules: GovernanceFiredRule[];
+}
+
+/**
+ * An optional, injected constitution-as-code evaluator. The workspace wiring
+ * builds one by binding `@mainspring/governance`'s `evaluate` to a rule set
+ * loaded from its `CONSTITUTION.md`:
+ *
+ * ```ts
+ * import { loadConstitutionFile, evaluate } from "@mainspring/governance";
+ * const { rules } = await loadConstitutionFile("./CONSTITUTION.md", config);
+ * const governance: GovernanceGuard = (action) => evaluate(action, rules);
+ * ```
+ *
+ * The gate consults it only for Actions its own built-in checks already
+ * allow, so governance can add hard-rule restrictions but never loosen a
+ * built-in denial. A real `governance` never throws (its `evaluate` catches a
+ * misbehaving rule and returns `escalate`), but should one blow up anyway —
+ * e.g. an unparseable constitution its loader couldn't handle — the gate
+ * fails CLOSED and denies rather than letting the Action through.
+ */
+export type GovernanceGuard = (action: Action) => GovernanceResult;
+
 export interface GateContext {
   constitution: Constitution;
   workspaceDir: string;
   /** Sum of expense amounts already dispatched so far in this session. */
   spentSoFarUsd: number;
   tools: ToolSpec[];
+  /**
+   * Optional constitution-as-code layer. When present, every Action the
+   * built-in gate would allow is additionally checked against it; a `block`
+   * or `escalate` verdict (or a thrown error) turns the allow into a denial
+   * carrying the fired rules' constitution citations. Omit for exactly the
+   * previous behavior — governance is purely additive.
+   */
+  governance?: GovernanceGuard;
 }
 
 const FORBIDDEN_WRITE_TARGETS = [".env", ".git"];
@@ -115,11 +165,28 @@ function structuralReason(action: Action): string | null {
 }
 
 /**
- * Validates a single proposed Action against the Constitution. Nothing is
- * ever executed here — this only decides allow/block and why. dispatch.ts
- * is the only module allowed to act on an `allowed: true` decision.
+ * Renders a governance denial as a single reason string in the same plain-text
+ * shape the built-in checks use, citing every rule that fired (its verdict, id,
+ * and description — the description carries any `(constitution: "…")` prose the
+ * loader attached, which is the citation).
  */
-export function gateAction(action: Action, ctx: GateContext): GateDecision {
+function describeGovernanceDenial(result: GovernanceResult): string {
+  const fired = result.firedRules.filter((r) => r.verdict !== "allow");
+  if (fired.length === 0) {
+    // A non-allow overall verdict with no fired rule recorded — cite the verdict itself.
+    return `governance ${result.verdict}ed this action`;
+  }
+  const citations = fired.map((r) => `[${r.verdict}] ${r.id}: ${r.description}`).join("; ");
+  return `governance denied this action — ${citations}`;
+}
+
+/**
+ * The Constitution's built-in, always-on checks. Split out from `gateAction`
+ * so the optional `@mainspring/governance` layer can be consulted on top
+ * without duplicating this logic. Nothing is ever executed here — this only
+ * decides allow/block and why.
+ */
+function gateActionBuiltIn(action: Action, ctx: GateContext): GateDecision {
   const malformed = structuralReason(action);
   if (malformed) {
     return { action, allowed: false, reason: malformed };
@@ -182,6 +249,41 @@ export function gateAction(action: Action, ctx: GateContext): GateDecision {
       return { action: exhaustive, allowed: false, reason: "unknown action kind" };
     }
   }
+}
+
+/**
+ * Validates a single proposed Action against the Constitution. Nothing is
+ * ever executed here — this only decides allow/block and why. dispatch.ts
+ * is the only module allowed to act on an `allowed: true` decision.
+ *
+ * The built-in checks run first and always. Then, only for an Action they
+ * allow, an injected `@mainspring/governance` guard (if any) is consulted:
+ * governance can add hard-rule restrictions but never loosen a built-in
+ * denial. A `block`/`escalate` verdict turns the allow into a denial carrying
+ * the fired rules' constitution citations; a governance guard that throws
+ * fails CLOSED (denies) rather than letting the Action slip through.
+ */
+export function gateAction(action: Action, ctx: GateContext): GateDecision {
+  const builtIn = gateActionBuiltIn(action, ctx);
+  if (!builtIn.allowed || !ctx.governance) {
+    return builtIn;
+  }
+
+  let result: GovernanceResult;
+  try {
+    result = ctx.governance(action);
+  } catch (err) {
+    return {
+      action,
+      allowed: false,
+      reason: `governance evaluation failed; denying fail-closed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  if (result.verdict !== "allow") {
+    return { action, allowed: false, reason: describeGovernanceDenial(result) };
+  }
+  return builtIn;
 }
 
 export function gateActions(actions: Action[], ctx: GateContext): GateDecision[] {

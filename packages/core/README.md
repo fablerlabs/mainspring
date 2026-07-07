@@ -62,3 +62,33 @@ const summary = await runSession({ workspaceDir, constitution, brain, broker });
 ```
 
 Omit `broker` and dispatch behaves exactly as before.
+
+## Governance seam (optional constitution-as-code)
+
+`gate` accepts an optional [`@mainspring/governance`](../governance) guard.
+Pass one to `runSession({ ..., governance })` (or `gateAction(action, { ...,
+governance })`) and every Action the built-in gate would **allow** is
+additionally checked against the constitution-as-code rule set. A `block` or
+`escalate` verdict turns the allow into a denial whose reason carries the
+fired rules' constitution citations; the guard is consulted *only* for Actions
+the built-ins already allow, so governance can add hard-rule restrictions but
+never loosen a built-in denial. A guard that throws (e.g. on an unparseable
+`CONSTITUTION.md`) fails **closed** — the Action is denied.
+
+The seam is structural (`GovernanceGuard`), so `core` keeps zero runtime
+dependencies — bind `governance`'s `evaluate` to rules loaded from a
+`CONSTITUTION.md`:
+
+```ts
+import { loadConstitutionFile, evaluate } from "@mainspring/governance";
+
+const { rules } = await loadConstitutionFile("./CONSTITUTION.md", {
+  moneyCaps: constitution.moneyCaps,
+  allowedTools: tools.map((t) => t.name),
+});
+const governance = (action) => evaluate(action, rules);
+
+const summary = await runSession({ workspaceDir, constitution, brain, governance });
+```
+
+Omit `governance` and the gate behaves exactly as before.
