@@ -77,8 +77,8 @@ export async function init(args: ParsedArgs): Promise<void> {
 
   const templatesDir = await findTemplatesDir();
   // templates/default holds the non-Constitution scaffold (STATE.md, LEDGER.csv,
-  // mainspring.config.ts, package.json, .gitignore). The Constitution itself is
-  // chosen by --template and copied from templates/CONSTITUTION.<variant>.md.
+  // mainspring.config.ts, package.json, README.md, .gitignore). The Constitution
+  // itself is chosen by --template and copied from templates/CONSTITUTION.<variant>.md.
   const defaultDir = templatesDir ? join(templatesDir, "default") : "";
   const constitutionTemplate = templatesDir ? join(templatesDir, `CONSTITUTION.${template}.md`) : "";
   if (!templatesDir || !(await exists(defaultDir)) || !(await exists(constitutionTemplate))) {
@@ -88,7 +88,7 @@ export async function init(args: ParsedArgs): Promise<void> {
   }
 
   // 1. Lay down the scaffold: STATE.md, LEDGER.csv, mainspring.config.ts,
-  //    package.json, .gitignore. (The default's own CONSTITUTION.md is
+  //    package.json, README.md, .gitignore. (The default's own CONSTITUTION.md is
   //    overwritten in step 2 with the chosen --template variant.)
   await cp(defaultDir, targetDir, { recursive: true });
 
@@ -112,7 +112,7 @@ export async function init(args: ParsedArgs): Promise<void> {
       .replace(/[^a-z0-9-]+/g, "-")
       .replace(/^-+|-+$/g, "") || "mainspring-business";
 
-  for (const file of ["CONSTITUTION.md", "STATE.md", "mainspring.config.ts"]) {
+  for (const file of ["CONSTITUTION.md", "STATE.md", "mainspring.config.ts", "README.md"]) {
     await replaceTokenInFile(join(targetDir, file), "{{BUSINESS_NAME}}", name);
   }
   await replaceTokenInFile(join(targetDir, "package.json"), "{{BUSINESS_SLUG}}", slug);

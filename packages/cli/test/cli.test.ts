@@ -125,6 +125,14 @@ test("init scaffolds a workspace that doctor passes with exit 0", async () => {
     const ledger = await readFile(join(dir, "LEDGER.csv"), "utf8");
     assert.match(ledger, /^date,type,description,amount,balance/, "LEDGER.csv has the header row");
 
+    // The generated project README carries the honest, removable attribution
+    // footer (github-search backlink), with --name substituted into the title.
+    assert.ok(await fileExists(join(dir, "README.md")), "README.md written");
+    const readme = await readFile(join(dir, "README.md"), "utf8");
+    assert.match(readme, /Built on Mainspring — github\.com\/fablerlabs\/mainspring/, "README carries the Mainspring attribution footer");
+    assert.match(readme, /# Doctor Test Co/, "name substituted into README title");
+    assert.doesNotMatch(readme, /\{\{BUSINESS_NAME\}\}/, "no unsubstituted token remains in README");
+
     // The whole point: doctor is clean, exit 0.
     const doctorRes = await capture(() => doctor(argsFor(dir)));
     assert.doesNotMatch(doctorRes.out, /^\s*FAIL\s/m, `no check should FAIL after init:\n${doctorRes.out}`);

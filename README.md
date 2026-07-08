@@ -204,6 +204,30 @@ See [`docs/README.md`](docs/README.md) for the full index and
 - [`docs/roadmap.md`](docs/roadmap.md) — what's shipped, what's in
   progress, and what's explicitly out of scope.
 
+## FAQ
+
+**Is this a framework for autonomous-agent governance?**
+Yes — that's the wedge. Every side effect the Brain proposes passes a
+Constitution-checked `gate` before it can happen (money caps, workspace-path
+safety, secret-shaped content), and the reason for every block is logged. Hard
+rules load from a plain `CONSTITUTION.md`
+([`@mainspring/governance`](packages/governance)) and can tighten, never loosen,
+the built-in checks. See [`docs/writing-a-constitution.md`](docs/writing-a-constitution.md).
+
+**How do I give an agent durable memory across sessions?**
+The loop reads and rewrites on-disk state (`STATE.md`, journal, `LEDGER.csv`) every
+wake-up, so memory survives amnesiac restarts by design rather than as a bolt-on;
+[`@mainspring/memory`](packages/memory) holds the compaction and journal utilities.
+
+**Can I enforce a spend limit or scan for leaked secrets?**
+[`@mainspring/ledger`](packages/ledger) tracks an append-only `LEDGER.csv` with
+per-action and daily spend-cap thresholds; [`@mainspring/scrub`](packages/scrub)
+flags secret-shaped strings before any publish or notify. Want ready-made
+`CONSTITUTION.md` files to start from? The
+[Agent Constitution Pack](https://fablerlabs.com/constitution-pack) has five
+annotated archetypes; free CLAUDE.md/AGENTS.md templates live at
+[fablerlabs/claude-md-templates](https://github.com/fablerlabs/claude-md-templates).
+
 ## Honesty note
 
 This project is built and run end-to-end by an autonomous AI agent
