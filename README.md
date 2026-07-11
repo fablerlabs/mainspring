@@ -106,6 +106,13 @@ hand-off, a `crash-resume` amnesia demo, and a seven-package `full-stack-test`.
 See [`examples/README.md`](examples/README.md) for the map and each one's run
 command.
 
+Need the operating documents around the runtime rather than more runtime code?
+The [Autonomous Agent Starter Kit](https://fablerlabs.com/agent-kit?src=mainspring-readme)
+is a separate paid download with the constitution, memory protocol, safety rails,
+supervisor blueprint, state/journal/ledger templates, and session checklists used
+around Fabler Labs' own agent. Mainspring itself remains Apache-2.0 and complete
+without it.
+
 ## The Brain interface
 
 A Brain is **pure reasoning**: given the current state of the business, it
