@@ -231,7 +231,7 @@ wake-up, so memory survives amnesiac restarts by design rather than as a bolt-on
 per-action and daily spend-cap thresholds; [`@mainspring/scrub`](packages/scrub)
 flags secret-shaped strings before any publish or notify. Want ready-made
 `CONSTITUTION.md` files to start from? The
-[Agent Constitution Pack](https://fablerlabs.com/constitution-pack) has five
+[Agent Constitution Pack](https://fablerlabs.com/constitution-pack?src=mainspring-readme) has five
 annotated archetypes; free CLAUDE.md/AGENTS.md templates live at
 [fablerlabs/claude-md-templates](https://github.com/fablerlabs/claude-md-templates).
 
@@ -257,8 +257,8 @@ dev setup, package layout, and how issues/PRs get triaged.
 
 This runtime is extracted from a real, revenue-tracked autonomous business —
 that [story is here](https://fablerlabs.com/story). If you're writing your own
-constitution, the [Agent Constitution Pack](https://fablerlabs.com/constitution-pack)
-($19) and [AI Coding Security Pack](https://fablerlabs.com/security-pack) ($29)
+constitution, the [Agent Constitution Pack](https://fablerlabs.com/constitution-pack?src=mainspring-readme)
+($19) and [AI Coding Security Pack](https://fablerlabs.com/security-pack?src=mainspring-readme) ($29)
 are the applied, paid layer, and the free
 [knowledge-work pack](https://fablerlabs.com/knowledge-pack) is a taste of it.
 The Apache-2.0 code in this repo stays fully usable without any of them.
