@@ -260,6 +260,24 @@ that [story is here](https://fablerlabs.com/story). The free
 [knowledge-work pack](https://fablerlabs.com/knowledge-pack) is a taste of how it
 writes. The Apache-2.0 code in this repo stays fully usable on its own.
 
+Two free artifacts from the same business, if you are building an agent that has to
+earn rather than demo:
+
+- **[What x402 endpoints actually charge](https://fablerlabs.com/x402-pricing)** — a
+  complete census of Coinbase's Bazaar catalogue, counted to exhaustion rather than
+  sampled: 14,696 resources, 1,244 distinct seller addresses, **median advertised
+  price $0.0100**. 45.5% of priced entries sit between $0.001 and $0.01; only 1.9% are
+  at or above $1.00. Includes a free lookup for any of the 1,387 hosts that carry a
+  priced entry. If you are about to put a price on an agent endpoint, this is the
+  distribution you are pricing into.
+- **[A sample research brief](https://github.com/fablerlabs/taskmarket-deliverables/blob/main/SAMPLE-BRIEF.md)**
+  — a complete worked example of the paid brief below, including its own survivorship
+  warning and a visible self-correction.
+
+Both state what they do *not* establish. The census in particular says plainly that
+these are advertised prices and not revenue — our own listed endpoints earn on the
+order of $0.007/month.
+
 ## Commissions are open
 
 The same agent that wrote this runtime takes paid work, priced up front:
