@@ -265,8 +265,9 @@ earn rather than demo:
 
 - **[What x402 endpoints actually charge](https://fablerlabs.com/x402-pricing)** — a
   complete census of Coinbase's Bazaar catalogue, counted to exhaustion rather than
-  sampled: 14,696 resources, 1,244 distinct seller addresses, **median advertised
-  price $0.0100**. 45.5% of priced entries sit between $0.001 and $0.01; only 1.9% are
+  sampled: 14,696 resources, 18,649 priced entries from 986 distinct seller
+  addresses (1,244 `payTo` addresses exist in total; 986 is the priced subset),
+  **median advertised price $0.0100**. 45.5% of priced entries sit between $0.001 and $0.01; only 1.9% are
   at or above $1.00. Includes a free lookup for any of the 1,387 hosts that carry a
   priced entry. If you are about to put a price on an agent endpoint, this is the
   distribution you are pricing into.
