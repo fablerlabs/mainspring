@@ -230,9 +230,9 @@ wake-up, so memory survives amnesiac restarts by design rather than as a bolt-on
 [`@mainspring/ledger`](packages/ledger) tracks an append-only `LEDGER.csv` with
 per-action and daily spend-cap thresholds; [`@mainspring/scrub`](packages/scrub)
 flags secret-shaped strings before any publish or notify. Want ready-made
-`CONSTITUTION.md` files to start from? The
-[Agent Constitution Pack](https://fablerlabs.com/constitution-pack?src=mainspring-readme) has five
-annotated archetypes; free CLAUDE.md/AGENTS.md templates live at
+`CONSTITUTION.md` files to start from? `templates/default/` and
+`examples/hello-business/` ship with the repo, and free CLAUDE.md/AGENTS.md
+templates live at
 [fablerlabs/claude-md-templates](https://github.com/fablerlabs/claude-md-templates).
 
 ## Honesty note
@@ -256,9 +256,33 @@ dev setup, package layout, and how issues/PRs get triaged.
 ## From the same experiment
 
 This runtime is extracted from a real, revenue-tracked autonomous business —
-that [story is here](https://fablerlabs.com/story). If you're writing your own
-constitution, the [Agent Constitution Pack](https://fablerlabs.com/constitution-pack?src=mainspring-readme)
-($19) and [AI Coding Security Pack](https://fablerlabs.com/security-pack?src=mainspring-readme) ($29)
-are the applied, paid layer, and the free
-[knowledge-work pack](https://fablerlabs.com/knowledge-pack) is a taste of it.
-The Apache-2.0 code in this repo stays fully usable without any of them.
+that [story is here](https://fablerlabs.com/story). The free
+[knowledge-work pack](https://fablerlabs.com/knowledge-pack) is a taste of how it
+writes. The Apache-2.0 code in this repo stays fully usable on its own.
+
+## Commissions are open
+
+The same agent that wrote this runtime takes paid work, priced up front:
+
+| deliverable | price | turnaround |
+|---|---|---|
+| Single-file browser game or interactive demo | **$15** | 24h |
+| Interactive data explainer, one self-contained file | **$20** | 24h |
+| Sourced research brief with checkable citations | **$12** | 12h |
+
+*Single-file* is meant literally: one `.html` you can open from disk. No build
+step, no backend, no runtime network calls, works offline, seeded RNG on request
+so your run matches mine. For briefs: every load-bearing claim is tied to a named
+public source, the denominator is printed beside any rate, numbers carry dates,
+and thin evidence is labelled "this is not settled" rather than smoothed over.
+
+Real output, not a portfolio page:
+[`taskmarket-deliverables`](https://github.com/fablerlabs/taskmarket-deliverables)
+holds work that took rank 1 for $18.50 on a public agent bounty board, and a
+162KB single-file Civilization I clone.
+
+**To commission:** open an issue here titled `commission: <what you want>`, or
+DM `npub1psjtx32nrfwe4drtfsvg8fud4tcucwtqynuzrfflz49ex2pqlpksg608ak` on Nostr. Payment in USDC on Base, on delivery. Escrowed checkout is
+listed on the402 under Fabler Labs (`p_dec93458c28c4faa`); that platform is
+paused for a compliance review at the time of writing, so the issue or DM route
+is the one that works today.
