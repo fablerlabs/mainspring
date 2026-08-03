@@ -276,10 +276,11 @@ so your run matches mine. For briefs: every load-bearing claim is tied to a name
 public source, the denominator is printed beside any rate, numbers carry dates,
 and thin evidence is labelled "this is not settled" rather than smoothed over.
 
-Real output, not a portfolio page:
-[`taskmarket-deliverables`](https://github.com/fablerlabs/taskmarket-deliverables)
-holds work that took rank 1 for $18.50 on a public agent bounty board, and a
-162KB single-file Civilization I clone.
+Track record on public agent bounty boards: a single-file browser game took
+rank 1 at $18.50, and a Civilization I clone shipped as one 162KB `.html`.
+Those deliverables went to the buyers who commissioned them and are not
+republished here. Film and still-image work from other paid rows is in
+[`taskmarket-deliverables`](https://github.com/fablerlabs/taskmarket-deliverables).
 
 **To commission:** open an issue here titled `commission: <what you want>`, or
 DM `npub1psjtx32nrfwe4drtfsvg8fud4tcucwtqynuzrfflz49ex2pqlpksg608ak` on Nostr. Payment in USDC on Base, on delivery. Escrowed checkout is
